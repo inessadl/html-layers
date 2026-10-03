@@ -39,16 +39,15 @@
     '--hl-chip-height': '22px',
     '--hl-chip-font': '12px',
     '--hl-chip-pad': '8px',        // chip side padding
-    '--hl-chip-border': '1.5px',
-    '--hl-chip-zoom': '1.1',       // chip scale on hover / selection
+    '--hl-chip-zoom': '1.05',       // chip scale on hover / selection
     '--hl-veil': '0.45',           // veil opacity (0 to 1)
     // Geometry, read by the script on every redraw:
     '--hl-pad-x': '6px',           // space around headings and lists, sides
     '--hl-pad-y': '4px',           // space around headings and lists, top and bottom
     '--hl-landmark-inset': '3px',  // landmarks drawn this much inside the element
     '--hl-grow': '4px',            // room landmarks leave around the marks inside them
-    '--hl-lift': '3px',            // how much a box grows on hover / selection
-    '--hl-chip-gap': '4px',        // space between chip and box
+    '--hl-lift': '2px',            // how much a box grows on hover / selection
+    '--hl-chip-gap': '1px',        // space between chip and box
     '--hl-freeze': '0',            // 1 = stop redrawing, to edit the marks by hand
   };
 
@@ -73,7 +72,7 @@
       height: var(--hl-chip-height); padding: 0 var(--hl-chip-pad); border-radius: 999px;
       font: 700 var(--hl-chip-font)/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: .01em;
       white-space: nowrap; z-index: 3;
-      background: var(--bg); color: var(--fg); border: var(--hl-chip-border) solid var(--line);
+      background: var(--bg); color: var(--fg);
     }
     .chip.heading { --bg: var(--heading); --fg: var(--heading-text); --line: var(--heading-line); min-width: var(--hl-chip-height); justify-content: center; padding: 0 calc(var(--hl-chip-pad) - 2px); }
     .chip.landmark { --bg: var(--landmark); --fg: var(--landmark-text); --line: var(--landmark-line); }
@@ -81,7 +80,7 @@
     .chip.issue { --bg: var(--issue); --fg: var(--issue-text); --line: var(--issue-line); }
     .chip.ghost { opacity: .85; outline: 1.5px dashed var(--fg); outline-offset: -4px; }
     .chip svg { width: 12px; height: 12px; flex: none; }
-    .chip.hover { z-index: 4; transform: scale(var(--hl-chip-zoom)); transform-origin: left center; }
+    .chip.hover { z-index: 4; transform: scale(var(--hl-chip-zoom)); transform-origin: left bottom; }
     .measure { visibility: hidden; left: 0; top: 0; }
   `;
   const TOKENS = {
@@ -118,7 +117,8 @@
   function mount() {
     if (state.host && state.host.isConnected) return;
     const host = document.createElement('html-layers-overlay');
-    host.setAttribute('style', 'all: initial !important; position: fixed !important; inset: 0 !important; z-index: 2147483647 !important; pointer-events: none !important; display: block !important; contain: strict !important;');
+    // Short inline style on purpose: easy to read and edit in DevTools (no "all: initial").
+    host.setAttribute('style', 'position: fixed !important; inset: 0 !important; margin: 0 !important; z-index: 2147483647 !important; pointer-events: none !important; display: block !important; contain: strict !important;');
     const root = host.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
     const vars = (o) => Object.entries(o).map(([k, v]) => k + ':' + v).join(';');
