@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "HTML Layers",
   "version": "0.1.0",
-  "description": "See the semantic structure of any page: headings, landmarks and lists drawn as layers over the content.",
+  "description": "See the semantic structure of any page as layers: headings, landmarks and lists, with checks for heading order and landmarks.",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
