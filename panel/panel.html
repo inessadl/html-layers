@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HTML Layers</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <header class="top">
+    <h1 class="brand">HTML Layers</h1>
+    <button type="button" id="rescan" class="icon-btn" aria-label="Scan the page again" title="Scan again" hidden>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v2.6h-2.6"/></svg>
+    </button>
+  </header>
+
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+
+  <section id="blocked" class="empty" hidden>
+    <h2 class="empty__title">Nothing to inspect yet</h2>
+    <p id="blocked-text" class="empty__text"></p>
+    <div class="empty__actions">
+      <button type="button" id="allow" class="btn">Allow on all sites</button>
+    </div>
+    <p class="empty__hint">Allowing all sites lets HTML Layers follow you across tabs and reloads. Nothing is collected or sent anywhere.</p>
+  </section>
+
+  <main id="main" hidden>
+    <fieldset class="layers">
+      <legend class="section-title">Layers</legend>
+      <label class="toggle"><input type="checkbox" data-layer="headings" checked><span class="swatch swatch--heading" aria-hidden="true"></span>Headings <span class="count" data-count="headings"></span></label>
+      <label class="toggle"><input type="checkbox" data-layer="landmarks" checked><span class="swatch swatch--landmark" aria-hidden="true"></span>Landmarks <span class="count" data-count="landmarks"></span></label>
+      <label class="toggle"><input type="checkbox" data-layer="lists"><span class="swatch swatch--list" aria-hidden="true"></span>Lists <span class="count" data-count="lists"></span></label>
+      <label class="toggle"><input type="checkbox" data-layer="wash" checked><span class="swatch swatch--wash" aria-hidden="true"></span>Veil over the page</label>
+      <div class="veil">
+        <label for="theme">Veil</label>
+        <select id="theme">
+          <option value="auto">Auto</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <section class="summary" aria-labelledby="summary-title">
+      <h2 id="summary-title" class="section-title">Issues</h2>
+      <p id="summary-text" class="summary__text"></p>
+      <ul id="page-issues" class="page-issues"></ul>
+    </section>
+
+    <section data-section="headings" aria-labelledby="headings-title">
+      <h2 id="headings-title" class="section-title">Headings outline</h2>
+      <ol id="headings" class="tree" role="list"></ol>
+    </section>
+
+    <section data-section="landmarks" aria-labelledby="landmarks-title">
+      <h2 id="landmarks-title" class="section-title">Landmarks</h2>
+      <ol id="landmarks" class="tree" role="list"></ol>
+    </section>
+
+    <section data-section="lists" aria-labelledby="lists-title" hidden>
+      <h2 id="lists-title" class="section-title">Lists</h2>
+      <ol id="lists" class="tree" role="list"></ol>
+    </section>
+
+    <p class="legend">Dashed = hidden on screen. Click an item to find it on the page, click again or press Esc to clear.</p>
+  </main>
+
+  <script src="panel.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "HTML Layers",
+  "version": "0.1.0",
+  "description": "See the semantic structure of any page: headings, landmarks and lists drawn as layers over the content.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Inspect this page with HTML Layers",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "panel/panel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["sidePanel", "activeTab", "scripting"],
+  "optional_host_permissions": ["<all_urls>"],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+L" },
+      "description": "Open HTML Layers on this tab"
+    }
+  }
+}
