@@ -1,12 +1,7 @@
-// HTML Layers - detection and validation.
-// Reads the DOM and returns headings, landmarks and lists with their issues.
-// Adapted from Ine's original semantics inspector (AJC).
 (() => {
   if (globalThis.HTMLLayersScan) return;
 
   const IGNORE = 'html-layers-overlay';
-
-  // ---------- helpers ----------
 
   function idref(el, attr) {
     const ids = el.getAttribute(attr);
@@ -17,7 +12,6 @@
     }).join(' ').trim();
   }
 
-  // Approximate accessible text: text nodes + img alt, skipping aria-hidden subtrees.
   function textOf(root) {
     let out = '';
     const walk = (n) => {
@@ -44,9 +38,6 @@
     return label ? label.trim() : '';
   }
 
-  // How an element is hidden.
-  // ax:   removed from the accessibility tree (screen readers skip it)
-  // ghost: still read by screen readers, but not visible on screen
   function visibility(el) {
     if (el.closest('[inert]')) return { state: 'inert', ax: true };
     if (el.closest('[aria-hidden="true"]')) return { state: 'aria-hidden', ax: true };
@@ -69,8 +60,6 @@
 
   function inOverlay(el) { return !!el.closest(IGNORE); }
 
-  // ---------- headings ----------
-
   const HSEL = 'h1,h2,h3,h4,h5,h6,[role="heading"]';
 
   function scanHeadings(page) {
@@ -82,7 +71,6 @@
       const native = /^h[1-6]$/.test(tag);
       const notes = [];
       if (native && (role === 'presentation' || role === 'none')) {
-        // Semantics removed: not a heading for assistive tech. Listed, not counted.
         out.push(base(el, { kind: 'heading', level: null, removed: true, tag, label: tag + ' role=' + role,
           notes: ['role="' + role + '" removes the heading semantics'] }));
         return;
@@ -108,7 +96,6 @@
       out.push(base(el, { kind: 'heading', level, tag, label: 'h' + level, notes }));
     });
 
-    // Validation: only headings exposed to assistive tech take part in the outline.
     const exposed = out.filter((h) => !h.removed && !h.vis.ax);
     let prev = 0;
     exposed.forEach((h) => {
@@ -125,8 +112,6 @@
     }
     return out;
   }
-
-  // ---------- landmarks ----------
 
   const ROLE_LANDMARK = { banner: 1, contentinfo: 1, main: 1, navigation: 1, complementary: 1, search: 1, form: 1, region: 1 };
   const IMPLICIT = { HEADER: 'banner', FOOTER: 'contentinfo', MAIN: 'main', NAV: 'navigation', ASIDE: 'complementary', SEARCH: 'search', FORM: 'form', SECTION: 'region' };
@@ -157,7 +142,6 @@
       out.push(base(el, { kind: 'landmark', role, tag, name, label: role, notes }));
     });
 
-    // Nesting depth, for the panel tree.
     const els = new Set(out.map((l) => l.el));
     out.forEach((l) => {
       let d = 0;
@@ -181,8 +165,6 @@
     if (!byRole.main) page.issues.push('No main landmark');
     return out;
   }
-
-  // ---------- lists ----------
 
   function scanLists() {
     const out = [];
@@ -216,8 +198,6 @@
     return out;
   }
 
-  // ---------- shared ----------
-
   let nextId = 1;
   const ids = new WeakMap();
   function idOf(el) {
@@ -244,13 +224,11 @@
     const landmarks = scanLandmarks(page);
     const lists = scanLists();
     if (!document.documentElement.getAttribute('lang')) {
-      // Not part of the MVP rules, kept as a page note only.
       page.notes = ['<html> has no lang attribute'];
     }
     return { page, headings, landmarks, lists };
   }
 
-  // Serializable copy for the panel (no DOM references).
   function serialize(result) {
     const strip = (i) => ({
       id: i.id, kind: i.kind, label: i.label, level: i.level ?? null, role: i.role || null,

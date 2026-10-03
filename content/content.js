@@ -1,4 +1,3 @@
-// HTML Layers - overlay layer drawn on top of the page, and the link with the side panel.
 (() => {
   if (globalThis.HTMLLayers) return;
 
@@ -9,7 +8,7 @@
     result: null,
     byId: new Map(),
     layers: { headings: true, landmarks: true, lists: false, wash: true },
-    theme: 'auto',          // auto | light | dark (overlay veil, not the panel)
+    theme: 'auto',
     focusId: null,
     hoverId: null,
     byEl: new Map(),
@@ -23,32 +22,28 @@
     rescanTimer: 0,
   };
 
-  // ---------- overlay ----------
-
-  // One line per mark, in a tonal variant of the category color (no second outline).
-  // The chip keeps the base color.
-  // Tweakable in DevTools: select <html-layers-overlay> (last child of <html>) and add any
-  // of these to its element.style, e.g. --hl-line: 3px. The overlay redraws on change.
   const TWEAKS = {
-    '--hl-line': '2px',            // line width
-    '--hl-line-active': '3px',     // line width on hover / selection
-    '--hl-radius': '4px',          // box corners (headings, lists)
-    '--hl-landmark-radius': '6px', // box corners (landmarks)
-    '--hl-fill': '28%',            // fill on hover (headings, lists)
-    '--hl-landmark-fill': '10%',   // fill on hover (landmarks)
+    '--hl-line': '2px',
+    '--hl-line-active': '3px',
+    '--hl-radius': '4px',
+    '--hl-landmark-radius': '6px',
+    '--hl-fill': '28%',
+    '--hl-landmark-fill': '10%',
     '--hl-chip-height': '22px',
     '--hl-chip-font': '12px',
-    '--hl-chip-pad': '8px',        // chip side padding
-    '--hl-chip-zoom': '1.05',       // chip scale on hover / selection
-    '--hl-veil': '0.45',           // veil opacity (0 to 1)
-    // Geometry, read by the script on every redraw:
-    '--hl-pad-x': '6px',           // space around headings and lists, sides
-    '--hl-pad-y': '4px',           // space around headings and lists, top and bottom
-    '--hl-landmark-inset': '3px',  // landmarks drawn this much inside the element
-    '--hl-grow': '4px',            // room landmarks leave around the marks inside them
-    '--hl-lift': '2px',            // how much a box grows on hover / selection
-    '--hl-chip-gap': '1px',        // space between chip and box
-    '--hl-freeze': '0',            // 1 = stop redrawing, to edit the marks by hand
+    '--hl-chip-pad': '8px',
+    '--hl-heading-chip-min': '36px',
+    '--hl-chip-attach': '1',
+    '--hl-chip-overlap': '2px',
+    '--hl-veil': '0.45',
+
+    '--hl-pad-x': '6px',
+    '--hl-pad-y': '4px',
+    '--hl-landmark-inset': '3px',
+    '--hl-grow': '4px',
+    '--hl-lift': '0px',
+    '--hl-chip-gap': '1px',
+    '--hl-freeze': '0',
   };
 
   const CSS = `
@@ -74,13 +69,13 @@
       white-space: nowrap; z-index: 3;
       background: var(--bg); color: var(--fg);
     }
-    .chip.heading { --bg: var(--heading); --fg: var(--heading-text); --line: var(--heading-line); min-width: var(--hl-chip-height); justify-content: center; padding: 0 calc(var(--hl-chip-pad) - 2px); }
+    .chip.heading { --bg: var(--heading); --fg: var(--heading-text); --line: var(--heading-line); min-width: var(--hl-heading-chip-min); justify-content: center; }
     .chip.landmark { --bg: var(--landmark); --fg: var(--landmark-text); --line: var(--landmark-line); }
     .chip.list { --bg: var(--list); --fg: var(--list-text); --line: var(--list-line); }
     .chip.issue { --bg: var(--issue); --fg: var(--issue-text); --line: var(--issue-line); }
     .chip.ghost { opacity: .85; outline: 1.5px dashed var(--fg); outline-offset: -4px; }
     .chip svg { width: 12px; height: 12px; flex: none; }
-    .chip.hover { z-index: 4; transform: scale(var(--hl-chip-zoom)); transform-origin: left bottom; }
+    .chip.hover { z-index: 4; }
     .measure { visibility: hidden; left: 0; top: 0; }
   `;
   const TOKENS = {
@@ -89,27 +84,26 @@
     '--list': '#F5C84C', '--list-text': '#14283A',
     '--issue': '#D23838', '--issue-text': '#FFFFFF',
   };
-  // Veil themes. Light pages: light veil, darker line. Dark pages: dark veil, lighter line.
-  // Same hue as the base color (OKLCH), at least 7:1 against white (light) or black (dark).
+
   const THEMES = {
     light: {
       '--page-wash': 'rgb(255 255 255 / var(--hl-veil))',
-      '--heading-line': '#045D94', '--landmark-line': '#6440B9', '--list-line': '#6D5504', '--issue-line': '#B20D1C',
+      '--heading-line': '#0569A6', '--landmark-line': '#6440B9', '--list-line': '#6D5504', '--issue-line': '#B20D1C',
     },
     dark: {
       '--page-wash': 'rgb(0 0 0 / var(--hl-veil))',
-      '--heading-line': '#409CE1', '--landmark-line': '#9E81FE', '--list-line': '#FFF1C8', '--issue-line': '#FD625C',
+      '--heading-line': '#2988CD', '--landmark-line': '#8C6EEB', '--list-line': '#FFDC83', '--issue-line': '#E84D4A',
     },
   };
-  // Geometry comes from the --hl-* variables (see TWEAKS), read once per redraw.
-  // Landmarks are drawn slightly inside, so stacked landmarks (header, main) don't overlap.
-  let PAD = {}, GROW = 4, LIFT = 3, GAP = 4;
+
+  let PAD = {}, GROW = 4, LIFT = 3, GAP = 4, ATTACH = true, OVERLAP = 2;
   function readGeometry() {
     const cs = getComputedStyle(state.host);
     const n = (name) => parseFloat(cs.getPropertyValue(name)) || 0;
     const px = n('--hl-pad-x'), py = n('--hl-pad-y'), inset = n('--hl-landmark-inset');
     PAD = { heading: { x: px, y: py }, list: { x: px, y: py }, landmark: { x: -inset, y: -inset } };
     GROW = n('--hl-grow'); LIFT = n('--hl-lift'); GAP = n('--hl-chip-gap');
+    ATTACH = n('--hl-chip-attach') === 1; OVERLAP = n('--hl-chip-overlap');
     return n('--hl-freeze') === 1;
   }
   const ALERT = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5 15 14.5H1L8 1.5Zm-.8 4.5v4.2h1.6V6H7.2Zm0 5.4V13h1.6v-1.6H7.2Z"/></svg>';
@@ -117,7 +111,7 @@
   function mount() {
     if (state.host && state.host.isConnected) return;
     const host = document.createElement('html-layers-overlay');
-    // Short inline style on purpose: easy to read and edit in DevTools (no "all: initial").
+
     host.setAttribute('style', 'position: fixed !important; inset: 0 !important; margin: 0 !important; z-index: 2147483647 !important; pointer-events: none !important; display: block !important; contain: strict !important;');
     const root = host.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
@@ -130,7 +124,7 @@
     root.append(style, wash, spot, marks);
     document.documentElement.appendChild(host);
     Object.assign(state, { host, root, wash, spot, marks });
-    // Tweaks edited in DevTools (element.style of the host) redraw right away.
+
     new MutationObserver(() => schedule()).observe(host, { attributes: true, attributeFilter: ['style'] });
   }
 
@@ -155,7 +149,6 @@
     return c;
   }
 
-  // Hovered (page or panel) or selected in the panel.
   function isActive(item) { return item.id === state.hoverId || item.id === state.focusId; }
 
   function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
@@ -168,12 +161,11 @@
     if (!state.active || !state.result) return;
     mount();
     state.host.setAttribute('data-theme', state.theme === 'auto' ? state.autoTheme || 'dark' : state.theme);
-    if (readGeometry()) return; // --hl-freeze: 1
+    if (readGeometry()) return;
     const vw = document.documentElement.clientWidth;
     const vh = document.documentElement.clientHeight;
     const L = state.layers;
 
-    // Spotlight on the item picked in the panel.
     const focus = state.focusId && state.byId.get(state.focusId);
     let focusRect = null;
     if (focus && focus.el.isConnected) {
@@ -193,16 +185,14 @@
       state.wash.style.display = L.wash ? 'block' : 'none';
     }
 
-    // 1. Geometry of every visible item, with breathing room (not clamped yet).
     const visible = (item) => {
-      // display: none and visibility: hidden are listed in the panel, not drawn.
       if (item.removed || item.vis.gone || !item.el.isConnected) return null;
       const r = item.el.getBoundingClientRect();
       if (!r.width && !r.height) return null;
       if (r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) return null;
       const pad = PAD[item.kind];
       return {
-        item, tiny: r.width <= 2 && r.height <= 2, // visually hidden: chip only, no box
+        item, tiny: r.width <= 2 && r.height <= 2,
         x1: r.left - pad.x, y1: r.top - pad.y, x2: r.right + pad.x, y2: r.bottom + pad.y,
       };
     };
@@ -211,7 +201,6 @@
     const lists = pick(L.lists, state.result.lists);
     const lands = pick(L.landmarks, state.result.landmarks);
 
-    // 2. Landmarks grow to wrap the marks drawn inside them (deepest first, so parents wrap children).
     lands.sort((a, b) => b.item.depth - a.item.depth);
     const inner = heads.concat(lists);
     lands.forEach((g) => {
@@ -222,12 +211,11 @@
       });
     });
 
-    // 3. Draw boxes, kept inside the viewport. Chip order: headings get the best spots.
     const boxes = document.createDocumentFragment();
     const chips = [];
     heads.concat(lands.slice().sort((a, b) => a.item.depth - b.item.depth), lists).forEach((g) => {
       const { item } = g;
-      // Hovered or selected: the box grows a little, in step with the chip zoom.
+
       const lift = isActive(item) ? LIFT : 0;
       const x1 = Math.max(g.x1 - lift, 2), y1 = Math.max(g.y1 - lift, 2);
       const x2 = Math.min(g.x2 + lift, vw - 2), y2 = Math.min(g.y2 + lift, vh - 2);
@@ -235,12 +223,11 @@
       b.className = 'box ' + item.kind + (item.issues.length ? ' issue' : '') + (item.vis.ghost || item.vis.ax ? ' ghost' : '') + (isActive(item) ? ' hover' : '');
       Object.assign(b.style, { left: x1 + 'px', top: y1 + 'px', width: Math.max(x2 - x1, 4) + 'px', height: Math.max(y2 - y1, 4) + 'px' });
       if (!g.tiny) boxes.appendChild(b);
-      chips.push({ item, rect: { left: x1, top: y1, right: x2, bottom: y2 } });
+      chips.push({ item, box: g.tiny ? null : b, rect: { left: x1, top: y1, right: x2, bottom: y2 } });
     });
 
     state.marks.replaceChildren(boxes);
 
-    // Measure chips, then place them outside the element without overlapping each other.
     const els = chips.map((c) => { const e = chipEl(c.item); e.classList.add('measure'); state.marks.appendChild(e); return e; });
     const sizes = els.map((e) => ({ w: e.offsetWidth, h: e.offsetHeight }));
     const placed = [];
@@ -249,11 +236,11 @@
       const r = c.rect;
       const gap = GAP;
       const candidates = [
-        { x: r.left, y: r.top - h - gap },           // above, aligned left
-        { x: r.left - w - gap, y: r.top },           // outside, left
-        { x: r.left + gap, y: r.top + gap },         // inside, top left
+        { x: r.left, y: r.top - h + (ATTACH ? OVERLAP : -gap) },
+        { x: r.left - w - gap, y: r.top },
+        { x: r.left + gap, y: r.top + gap },
       ];
-      let spot = null;
+      let spot = null, spotCi = -1, spotShift = 0;
       candidates.forEach((cand, ci) => {
         for (let shift = 0; shift < 6 && !spot; shift++) {
           const want = { x: cand.x + shift * (w + gap), y: cand.y };
@@ -261,24 +248,23 @@
             x: Math.min(Math.max(want.x, 2), vw - w - 2),
             y: Math.min(Math.max(want.y, 2), vh - h - 2), w, h,
           };
-          // Outside positions that would be pushed back over the element are skipped.
+
           const pushed = Math.abs(p.x - want.x) > 8 || Math.abs(p.y - want.y) > 8;
           if (ci < 2 && pushed) continue;
-          if (!placed.some((q) => overlaps(p, q))) spot = p;
+          if (!placed.some((q) => overlaps(p, q))) { spot = p; spotCi = ci; spotShift = shift; }
         }
       });
       if (!spot) spot = { x: Math.min(Math.max(r.left, 2), vw - w - 2), y: Math.min(Math.max(r.top - h - gap, 2), vh - h - 2), w, h };
       placed.push(spot);
       const e = els[i];
       e.classList.remove('measure');
+
+      if (ATTACH && spotCi === 0 && Math.abs(spot.y - (r.top - h + OVERLAP)) < 1 && c.box) e.classList.add('attached');
       e.style.left = spot.x + 'px';
       e.style.top = spot.y + 'px';
     });
   }
 
-  // ---------- scanning ----------
-
-  // Sample the page background on a grid and pick the veil that disturbs it least.
   function detectTheme() {
     const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
     const lum = (rgb) => {
@@ -290,7 +276,7 @@
         const m = getComputedStyle(n).backgroundColor.match(/[\d.]+/g);
         if (m && (m.length < 4 || parseFloat(m[3]) > 0.5)) return m.slice(0, 3).map(Number);
       }
-      return [255, 255, 255]; // browser default canvas
+      return [255, 255, 255];
     };
     let total = 0, n = 0;
     for (let i = 1; i <= 5; i++) for (let j = 1; j <= 5; j++) {
@@ -324,7 +310,6 @@
 
   const onScroll = () => schedule();
 
-  // Hover: the innermost drawn item under the pointer gets highlighted, here and in the panel.
   function drawn(item) {
     if (!item || item.removed || item.vis.gone) return false;
     return !!state.layers[item.kind === 'heading' ? 'headings' : item.kind === 'landmark' ? 'landmarks' : 'lists'];
@@ -402,10 +387,8 @@
     schedule();
   }
 
-  // ---------- messaging with the side panel ----------
-
   function send(msg) {
-    if (state.port) { try { state.port.postMessage(msg); } catch (e) { /* panel closed */ } }
+    if (state.port) { try { state.port.postMessage(msg); } catch (e) {} }
   }
 
   function handle(msg) {
@@ -420,7 +403,7 @@
   if (globalThis.chrome && chrome.runtime && chrome.runtime.onConnect) {
     chrome.runtime.onConnect.addListener((port) => {
       if (port.name !== 'html-layers') return;
-      if (state.port) { try { state.port.disconnect(); } catch (e) { /* ignore */ } }
+      if (state.port) { try { state.port.disconnect(); } catch (e) {} }
       state.port = port;
       port.onMessage.addListener(handle);
       port.onDisconnect.addListener(() => {
@@ -430,6 +413,5 @@
     });
   }
 
-  // Exposed for tests.
   globalThis.HTMLLayers = { activate, deactivate, handle, render, state };
 })();

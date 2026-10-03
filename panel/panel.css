@@ -1,11 +1,9 @@
 :root {
-  /* Marcadores */
   --heading: #0675B8; --heading-text: #FFFFFF;
   --landmark: #7B5BD6; --landmark-text: #FFFFFF;
   --list: #F5C84C; --list-text: #14283A;
   --issue: #D23838; --issue-text: #FFFFFF;
 
-  /* Marca: tinta #14283A e papel #FBF8F3 */
   --panel-bg: #FBF8F3;
   --panel-surface: #F1ECE3;
   --panel-text: #14283A;

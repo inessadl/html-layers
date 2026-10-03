@@ -18,6 +18,33 @@ Chrome extension that draws the semantic structure of any page as layers over th
 
 After editing the code, click the reload button on the extension card and reload the page.
 
+## Tweaking the overlay in DevTools
+
+The marks are redrawn on every scroll and hover, so editing them directly gets overwritten. Instead, every visual parameter is a CSS variable on the overlay host:
+
+1. Open DevTools > Elements and select `<html-layers-overlay>` (last child of `<html>`)
+2. In Styles > `element.style`, add any variable below. The overlay redraws right away
+3. To edit the marks by hand, add `--hl-freeze: 1` (stops redrawing), then expand `#shadow-root`
+
+| Variable | Default | What it does |
+|---|---|---|
+| `--hl-line` / `--hl-line-active` | 2px / 3px | Line width, normal and on hover or selection |
+| `--hl-radius` / `--hl-landmark-radius` | 4px / 6px | Box corners |
+| `--hl-fill` / `--hl-landmark-fill` | 28% / 10% | Fill on hover |
+| `--hl-chip-height`, `--hl-chip-font`, `--hl-chip-pad` | 22px, 12px, 8px | Chip size |
+| `--hl-heading-chip-min` | 36px | Minimum width of heading chips |
+| `--hl-chip-attach` | 1 | 1 sits the chip on the box line, 0 makes it float |
+| `--hl-chip-overlap` | 2px | How much the attached chip covers the box line |
+| `--hl-veil` | 0.45 | Veil opacity |
+| `--hl-pad-x` / `--hl-pad-y` | 6px / 4px | Space around headings and lists |
+| `--hl-landmark-inset` | 3px | Landmarks drawn this much inside the element |
+| `--hl-grow` | 4px | Room landmarks leave around the marks inside them |
+| `--hl-lift` | 0px | How much a box grows on hover or selection (0 keeps everything still) |
+| `--hl-chip-gap` | 1px | Space between chip and box |
+| `--hl-freeze` | 0 | 1 stops redrawing |
+
+Colors can be overridden the same way (`--heading`, `--heading-line`, etc.). Defaults live in `TWEAKS`, `TOKENS` and `THEMES` in `content/content.js`.
+
 ## Structure
 
 - `manifest.json` - Manifest V3, permissions: `sidePanel`, `activeTab`, `scripting`, optional access to all sites

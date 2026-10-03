@@ -1,4 +1,3 @@
-// HTML Layers - side panel.
 const $ = (s) => document.querySelector(s);
 const ALERT = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5 15 14.5H1L8 1.5Zm-.8 4.5v4.2h1.6V6H7.2Zm0 5.4V13h1.6v-1.6H7.2Z"/></svg>';
 
@@ -21,8 +20,6 @@ let tabId = null;
 let data = null;
 let focusedId = null;
 
-// ---------- connection to the page ----------
-
 async function inspect(id) {
   disconnect();
   tabId = id;
@@ -42,7 +39,7 @@ async function inspect(id) {
 }
 
 function disconnect() {
-  if (port) { try { port.disconnect(); } catch (e) { /* ignore */ } }
+  if (port) { try { port.disconnect(); } catch (e) {} }
   port = null;
   focusedId = null;
 }
@@ -73,12 +70,10 @@ ui.allow.addEventListener('click', async () => {
 });
 ui.rescan.addEventListener('click', () => { if (port) port.postMessage({ type: 'rescan' }); else inspectActiveTab(); });
 
-// Toolbar icon clicked while the panel is open.
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg && msg.type === 'inspect') inspect(msg.tabId);
 });
 
-// Follow the user across tabs and reloads (works when access is allowed).
 chrome.tabs.onActivated.addListener(({ tabId: id, windowId }) => {
   if (id === tabId && port) return;
   chrome.windows.getCurrent().then((w) => { if (w.id === windowId) inspect(id); });
@@ -86,8 +81,6 @@ chrome.tabs.onActivated.addListener(({ tabId: id, windowId }) => {
 chrome.tabs.onUpdated.addListener((id, info) => {
   if (id === tabId && info.status === 'complete') inspect(id);
 });
-
-// ---------- messages from the page ----------
 
 function onMessage(msg) {
   if (msg.type === 'scan') {
@@ -103,8 +96,6 @@ function onMessage(msg) {
     else ui.status.textContent = '';
   }
 }
-
-// ---------- layers ----------
 
 document.querySelectorAll('[data-layer]').forEach((box) => {
   box.checked = layers[box.dataset.layer];
@@ -125,8 +116,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && focusedId && port) port.postMessage({ type: 'focus', id: focusedId });
 });
 
-// ---------- rendering ----------
-
 function render() {
   ui.blocked.hidden = true;
   ui.main.hidden = false;
@@ -139,7 +128,6 @@ function render() {
   document.querySelector('[data-count="landmarks"]').textContent = data.landmarks.length;
   document.querySelector('[data-count="lists"]').textContent = data.lists.length;
 
-  // Summary
   const itemIssues = ['headings', 'landmarks'].concat(layers.lists ? ['lists'] : [])
     .reduce((n, k) => n + data[k].filter((i) => i.issues.length).length, 0);
   const total = itemIssues + data.page.issues.length;
@@ -227,7 +215,6 @@ function rowFor(item) {
   return li;
 }
 
-// Pointer over an element on the page: highlight its row and bring it into view.
 function markHover(id) {
   document.querySelectorAll('.row.is-hover').forEach((b) => b.classList.remove('is-hover'));
   if (!id) return;
